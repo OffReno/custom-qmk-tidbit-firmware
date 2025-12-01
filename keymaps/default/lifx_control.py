@@ -50,54 +50,66 @@ def find_keyboard():
 
     return None
 
-def discover_lifx_lamp():
-    """Discover LIFX lamp on network"""
+def send_status_to_oled(keyboard, message):
+    """Send LIFX status message to keyboard for OLED display"""
+    # Format: [report_id, 0xF3, 0x04, message_bytes...]
+    data = [0] * 33  # 33 bytes: 1 for report ID + 32 for data
+    data[0] = 0x00  # Report ID (required for HID)
+    data[1] = 0xF3  # LIFX command identifier
+    data[2] = 0x04  # Status message command
+
+    # Encode message (max 27 bytes to fit in remaining space)
+    message_bytes = message[:27].encode('utf-8')
+    for i, byte in enumerate(message_bytes):
+        data[3 + i] = byte
+
+    keyboard.write(bytes(data))
+
+def discover_lifx_lamp(keyboard):
+    """Discover LIFX lamp on network - only connect to 'Desk Light'"""
     global lifx, lamp
 
-    print("Discovering LIFX devices on network...")
-    lifx = LifxLAN(1)  # Expect 1 lamp
+    lifx = LifxLAN()  # Discover all lamps
     devices = lifx.get_lights()
 
     if not devices:
-        print("ERROR: No LIFX devices found!")
-        print("Make sure your LIFX lamp is powered on and connected to WiFi.")
+        send_status_to_oled(keyboard, "Could not find Lamp")
         return False
 
-    lamp = devices[0]
-    print(f"Found LIFX lamp: {lamp.get_label()}")
+    # Filter for "Desk Light" only
+    for device in devices:
+        label = device.get_label()
+        if label == "Desk Light":
+            lamp = device
+            send_status_to_oled(keyboard, f"Found: {label}")
 
-    # Get current state
-    try:
-        power = lamp.get_power()
-        power_str = "ON" if power else "OFF"
-        print(f"  Power: {power_str}")
+            # Get current state
+            try:
+                power = lamp.get_power()
+                color = lamp.get_color()
+                brightness = color[2]  # HSBK format: [hue, saturation, brightness, kelvin]
+                return True
+            except Exception as e:
+                send_status_to_oled(keyboard, "Could not find Lamp")
+                return False
 
-        color = lamp.get_color()
-        brightness = color[2]  # HSBK format: [hue, saturation, brightness, kelvin]
-        print(f"  Brightness: {int(brightness / 65535 * 100)}%")
-
-        return True
-    except Exception as e:
-        print(f"ERROR: Could not communicate with lamp: {e}")
-        return False
+    # "Desk Light" not found
+    send_status_to_oled(keyboard, "Could not find Lamp")
+    return False
 
 def toggle_lamp():
     """Toggle lamp on/off"""
     global lamp
 
     if not lamp:
-        print("ERROR: No lamp connected")
         return
 
     try:
         current_power = lamp.get_power()
         new_power = 0 if current_power else 65535
         lamp.set_power(new_power, duration=500)  # 500ms transition
-
-        state = "ON" if new_power else "OFF"
-        print(f"Lamp toggled {state}")
     except Exception as e:
-        print(f"ERROR toggling lamp: {e}")
+        pass
 
 def adjust_brightness(direction):
     """Adjust lamp brightness
@@ -108,7 +120,6 @@ def adjust_brightness(direction):
     global lamp, current_brightness
 
     if not lamp:
-        print("ERROR: No lamp connected")
         return
 
     try:
@@ -124,31 +135,24 @@ def adjust_brightness(direction):
         lamp.set_color([hue, saturation, new_brightness, kelvin], duration=100)
 
         current_brightness = new_brightness
-        percent = int(new_brightness / 65535 * 100)
-        print(f"Brightness: {percent}%")
-    except Exception as e:
-        print(f"ERROR adjusting brightness: {e}")
+    except:
+        pass
 
 def hid_listener():
     """Listen for HID commands from keyboard"""
     keyboard_path = find_keyboard()
     if not keyboard_path:
-        print("ERROR: Could not find OffReno keyboard!")
         return
 
     try:
         keyboard = hid.device()
         keyboard.open_path(keyboard_path)
-        print("Connected to OffReno keyboard\n")
-    except Exception as e:
-        print(f"ERROR: Could not open keyboard: {e}")
+    except:
         return
 
-    print("Listening for encoder commands...")
-    print("  CW rotation  = Brightness up")
-    print("  CCW rotation = Brightness down")
-    print("  Button press = Toggle on/off")
-    print("\nPress Ctrl+C to stop\n")
+    # Discover LIFX lamp and send status to OLED
+    if not discover_lifx_lamp(keyboard):
+        return  # Exit if lamp not found
 
     try:
         while True:
@@ -170,31 +174,16 @@ def hid_listener():
             time.sleep(0.01)  # Small delay to prevent CPU spinning
 
     except KeyboardInterrupt:
-        print("\n\nStopping LIFX control...")
+        pass
     finally:
         keyboard.close()
 
 def main():
-    print("=" * 50)
-    print("LIFX Smart Lamp Control")
-    print("=" * 50)
-    print()
-
-    # Discover LIFX lamp
-    if not discover_lifx_lamp():
-        return
-
-    print()
-    print("=" * 50)
-    print("Ready! Use encoder 3 (KC_P0) to control lamp")
-    print("=" * 50)
-    print()
-
-    # Start listening for commands
+    # Start listening for commands (discovery happens inside)
     hid_listener()
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\nLIFX control stopped")
+        pass

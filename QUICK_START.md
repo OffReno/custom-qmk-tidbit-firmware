@@ -40,10 +40,10 @@ Before compiling, update these paths from `C:\Users\Renobatio\...` to your actua
 
 ### LIFX Setup Checklist
 
-- [ ] Ensure LIFX lamp is on the same WiFi network as your PC
+- [ ] Ensure LIFX lamp named "Desk Light" is on same WiFi as PC
 - [ ] Install lifxlan: `pip install lifxlan`
 - [ ] Press TOGGLE_LIFX switch to start script
-- [ ] Verify lamp is discovered in console output
+- [ ] OLED shows "Found: Desk Light" for 5 seconds (no terminal window)
 
 ### Discord Bot Checklist
 

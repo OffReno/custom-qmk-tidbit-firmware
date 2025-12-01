@@ -60,6 +60,11 @@ static uint32_t discord_message_time = 0;   // Time when temporary message was s
 static char discord_message[28] = "";       // Temporary message buffer
 static bool discord_showing_message = false; // Flag to keep showing Discord display for messages
 
+// LIFX lamp control data from HID RAW
+static char lifx_message[28] = "";          // LIFX status message
+static uint32_t lifx_message_time = 0;      // Time when LIFX message was shown
+static bool lifx_showing_message = false;   // Flag to show LIFX message
+
 // App names for starting (clockwise)
 static const char* start_apps[] = {"Steam", "Discord", "Desktop WP", "NordVPN"};
 static const char* start_bat_files[] = {
@@ -303,6 +308,16 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
         }
         discord_message_time = timer_read32();  // Mark message time for 3-second display
         discord_showing_message = true;
+    }
+    else if (data[0] == 0xF3 && data[1] == 0x04) {  // LIFX status message
+        // Extract message from remaining bytes (max 27 chars)
+        uint8_t msg_len = 0;
+        for (uint8_t i = 2; i < length && i < 29 && data[i] != 0; i++) {
+            lifx_message[msg_len++] = data[i];
+        }
+        lifx_message[msg_len] = '\0';  // Null terminate
+        lifx_message_time = timer_read32();  // Mark message time for 5-second display
+        lifx_showing_message = true;
     }
 }
 
@@ -625,6 +640,7 @@ bool oled_task_user(void) {
     static bool last_monitoring_active = false;
     static bool last_monitoring_startup = false;
     static bool last_discord_active = false;
+    static bool last_lifx_active = false;
 
     // Clear display on first run only
     if (!oled_initialized) {
@@ -635,7 +651,7 @@ bool oled_task_user(void) {
     // Check if we need to clear the display (only on state changes)
     bool should_clear = false;
     bool current_discord_display = discord_control_running || discord_showing_message;
-    if (monitoring_active != last_monitoring_active || current_discord_display != last_discord_active) {
+    if (monitoring_active != last_monitoring_active || current_discord_display != last_discord_active || lifx_showing_message != last_lifx_active) {
         should_clear = true;  // Mode changed
     } else if (monitoring_active && (monitoring_startup != last_monitoring_startup)) {
         should_clear = true;  // Within monitoring, startup phase changed
@@ -649,6 +665,7 @@ bool oled_task_user(void) {
     last_monitoring_active = monitoring_active;
     last_monitoring_startup = monitoring_startup;
     last_discord_active = current_discord_display;
+    last_lifx_active = lifx_showing_message;
 
     // If in monitoring mode
     if (monitoring_active) {
@@ -748,6 +765,34 @@ bool oled_task_user(void) {
             // Line 3: Clear it (pad to 21 chars)
             oled_set_cursor(0, 3);
             oled_write_P(PSTR("                     "), false);
+        }
+    } else if (lifx_showing_message) {
+        // LIFX status message mode - show message for 5 seconds then return to logo
+        char buf[22];
+
+        // Check if we should still show the message (within 5 seconds)
+        if (lifx_message_time != 0 && timer_elapsed32(lifx_message_time) < 5000) {
+            // Show LIFX status message
+            oled_set_cursor(0, 0);
+            oled_write_P(PSTR("                     "), false);
+
+            oled_set_cursor(0, 1);
+            snprintf(buf, sizeof(buf), "%-21s", lifx_message);
+            oled_write(buf, false);
+
+            oled_set_cursor(0, 2);
+            oled_write_P(PSTR("                     "), false);
+
+            oled_set_cursor(0, 3);
+            oled_write_P(PSTR("                     "), false);
+        } else {
+            // Clear message after 5 seconds and return to logo
+            lifx_message[0] = '\0';
+            lifx_message_time = 0;
+            lifx_showing_message = false;
+            oled_clear();
+            // Show logo
+            render_large_text(last_app);
         }
     } else {
         // Normal mode - render large text filling the screen

@@ -45,10 +45,11 @@
 - **Switch Next to Encoder (TOGGLE_LIFX)**: Start/stop LIFX control script
 
 **Features:**
-- Auto-discovers LIFX lamp on local network
+- Auto-discovers "Desk Light" lamp on local network
+- Runs completely in background (no terminal window)
+- Status shown on OLED for 5 seconds
 - Smooth brightness transitions (100ms for adjustments, 500ms for power)
 - Brightness range: 10% to 100%
-- Works with any LIFX WiFi-enabled bulb
 
 ### 📺 OLED Display (128x32 SSD1306)
 - Custom nullbits logo (idle state)
@@ -256,12 +257,15 @@ If you see "Found 0 non-bot users" but you're in a voice channel, check that all
 
 ### LIFX Smart Lamp Control
 1. **First Time Setup**:
-   - Ensure LIFX lamp is on the same WiFi network as your PC
+   - Ensure LIFX lamp named **"Desk Light"** is on the same WiFi network as your PC
    - Lamp must be powered on and connected to WiFi
 2. **Start the Script**:
    - Press the switch next to Encoder 3 (TOGGLE_LIFX)
-   - Script will auto-discover your LIFX lamp (takes ~2 seconds)
-   - Console shows: "Found LIFX lamp: [Your Lamp Name]"
+   - Script runs in background (no terminal window)
+   - **OLED displays status for 5 seconds**:
+     - ✅ "Found: Desk Light" if successful
+     - ❌ "Could not find Lamp" if failed
+   - Then returns to OffReno logo
 3. **Control the Lamp**:
    - Press Encoder 3 inward: Toggle ON/OFF
    - Rotate CW: Increase brightness
@@ -269,7 +273,10 @@ If you see "Found 0 non-bot users" but you're in a voice channel, check that all
 4. **Stop the Script**:
    - Press TOGGLE_LIFX again to stop
 
-**Note**: The LIFX control script must be running for the encoder to control the lamp. Use the TOGGLE_LIFX switch to start/stop it.
+**Note**:
+- Script only connects to lamp named **"Desk Light"** (ignores other LIFX lamps)
+- Script must be running for encoder to control lamp
+- No terminal window appears - all feedback shown on OLED
 
 ## 📁 File Structure
 

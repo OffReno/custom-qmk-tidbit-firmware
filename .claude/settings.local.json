@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(qmk --help:*)",
+      "Bash(qmk compile:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,41 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Discord bot credentials (NEVER commit this!)
+keymaps/default/discord_config.txt
+
+# QMK build files
+*.hex
+*.bin
+*.uf2
+*.elf
+*.map
+.build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.old

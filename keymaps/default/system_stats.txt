@@ -1,0 +1,1 @@
+CPU: 10 GPU:  3\nFPS:  0 PING: 44\n

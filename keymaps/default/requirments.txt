@@ -1,0 +1,7 @@
+psutil
+hidapi
+pynvml
+pycaw
+comtypes
+keyboard
+discord.py

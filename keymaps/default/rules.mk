@@ -1,0 +1,7 @@
+ENCODER_MAP_ENABLE = no
+PIN_COMPATIBLE = promicro
+SRC += stubs.c
+OLED_ENABLE = yes
+OLED_DRIVER = ssd1306
+RAW_ENABLE = yes
+ENCODER_ENABLE = yes

@@ -5,8 +5,9 @@
 ### What You Have
 - **4 Encoders** with custom functions
 - **OLED Display** showing stats and logos
-- **3 Python Scripts** running in background
+- **4 Python Scripts** running in background
 - **Discord Bot** for voice channel control
+- **LIFX Smart Lamp** integration
 
 ### Quick Reference Card
 
@@ -24,13 +25,25 @@
 | Rotate CW/CCW | Cycle Discord users |
 | Press (KC_P1) | Mute/unmute selected user |
 | KC_P2 | Start/stop Discord bot |
+| **Encoder 3** | |
+| Rotate CW | Brightness up |
+| Rotate CCW | Brightness down |
+| Press (KC_P0) | Toggle lamp ON/OFF |
+| TOGGLE_LIFX Switch | Start/stop LIFX script |
 
 ### Files You Need to Update
 
 Before compiling, update these paths from `C:\Users\Renobatio\...` to your actual path:
 
-1. **All .bat files** (14 files in `keymaps/default/`)
+1. **All .bat files** (16 files in `keymaps/default/`)
 2. **keymap.c** line 359
+
+### LIFX Setup Checklist
+
+- [ ] Ensure LIFX lamp is on the same WiFi network as your PC
+- [ ] Install lifxlan: `pip install lifxlan`
+- [ ] Press TOGGLE_LIFX switch to start script
+- [ ] Verify lamp is discovered in console output
 
 ### Discord Bot Checklist
 
@@ -60,6 +73,9 @@ make nullbitsco/tidbit:default:flash CONVERT_TO=promicro_rp2040
 - [ ] Discord bot detects users in voice channels
 - [ ] Encoder 2 cycles through Discord users
 - [ ] Mute/unmute works correctly
+- [ ] LIFX lamp discovered and controllable
+- [ ] Encoder 3 toggles lamp on/off
+- [ ] Encoder 3 adjusts brightness
 - [ ] OLED displays messages clearly
 - [ ] All startup/shutdown messages appear
 
@@ -71,6 +87,8 @@ make nullbitsco/tidbit:default:flash CONVERT_TO=promicro_rp2040
 | Scrambled OLED text | Reflash latest firmware with padding fixes |
 | Scripts won't start | Check absolute paths in .bat files |
 | Can't compile | Use QMK MSYS, not Windows CMD |
+| LIFX lamp not found | Check WiFi connection, ensure lamp is powered on |
+| Encoder doesn't control lamp | Start LIFX script with TOGGLE_LIFX switch |
 
 ### GitHub Upload
 
@@ -95,8 +113,8 @@ tidbit/
 ├── tidbit.c               # Core keyboard code
 ├── keymaps/default/
 │   ├── keymap.c           # Your custom firmware ⭐
-│   ├── *.py               # Python scripts (3 files)
-│   ├── *.bat              # Windows batch files (~14 files)
+│   ├── *.py               # Python scripts (4 files)
+│   ├── *.bat              # Windows batch files (~16 files)
 │   ├── discord_config.txt # YOUR CREDENTIALS (not in git!)
 │   └── README.md          # Full documentation
 └── .gitignore             # Protects sensitive files

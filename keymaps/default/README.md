@@ -1,12 +1,12 @@
 # OffReno Custom TIDBIT Firmware
 
-**A fully customized QMK firmware for the TIDBIT numpad with advanced system monitoring, volume balancing, and Discord voice control.**
+**A fully customized QMK firmware for the TIDBIT numpad with advanced system monitoring, volume balancing, Discord voice control, and smart home lighting.**
 
 ![TIDBIT Keyboard](https://i.imgur.com/placeholder.jpg) <!-- Replace with your actual photo -->
 
 ## 🎮 Features
 
-### 🔄 Three Powerful Encoders
+### 🔄 Four Powerful Encoders
 
 #### **Encoder 0 (Top Row)** - App Launcher & System Monitor
 - **CW Rotation**: Cycle through apps to launch (Steam, Discord, Desktop WP, NordVPN)
@@ -37,6 +37,18 @@
 - Shutdown: "DEMOCRACY RESTORED" (3 seconds)
 - Mute: "[Username] MUTED" (3 seconds)
 - Unmute: "[Username] UNMUTED" (3 seconds)
+
+#### **Encoder 3 (Fourth Row)** - LIFX Smart Lamp Control 💡
+- **CW Rotation**: Increase lamp brightness (~10% per step)
+- **CCW Rotation**: Decrease lamp brightness (~10% per step)
+- **Button Press (KC_P0)**: Toggle lamp ON/OFF
+- **Switch Next to Encoder (TOGGLE_LIFX)**: Start/stop LIFX control script
+
+**Features:**
+- Auto-discovers LIFX lamp on local network
+- Smooth brightness transitions (100ms for adjustments, 500ms for power)
+- Brightness range: 10% to 100%
+- Works with any LIFX WiFi-enabled bulb
 
 ### 📺 OLED Display (128x32 SSD1306)
 - Custom nullbits logo (idle state)
@@ -71,7 +83,7 @@
 
 #### Required Python Packages
 ```bash
-pip install psutil hidapi pynvml pycaw comtypes keyboard discord.py
+pip install psutil hidapi pynvml pycaw comtypes keyboard discord.py lifxlan
 ```
 
 Or using the requirements file:
@@ -242,6 +254,23 @@ If you see "Found 0 non-bot users" but you're in a voice channel, check that all
 3. Or rotate CCW to cycle kill mode
 4. Wait 2 seconds to kill selected app
 
+### LIFX Smart Lamp Control
+1. **First Time Setup**:
+   - Ensure LIFX lamp is on the same WiFi network as your PC
+   - Lamp must be powered on and connected to WiFi
+2. **Start the Script**:
+   - Press the switch next to Encoder 3 (TOGGLE_LIFX)
+   - Script will auto-discover your LIFX lamp (takes ~2 seconds)
+   - Console shows: "Found LIFX lamp: [Your Lamp Name]"
+3. **Control the Lamp**:
+   - Press Encoder 3 inward: Toggle ON/OFF
+   - Rotate CW: Increase brightness
+   - Rotate CCW: Decrease brightness
+4. **Stop the Script**:
+   - Press TOGGLE_LIFX again to stop
+
+**Note**: The LIFX control script must be running for the encoder to control the lamp. Use the TOGGLE_LIFX switch to start/stop it.
+
 ## 📁 File Structure
 
 ```
@@ -256,6 +285,7 @@ keymaps/default/
 ├── system_monitor.py             # System stats (CPU, GPU, RAM, Ping)
 ├── volume_balance.py             # Discord/Game volume control
 ├── discord_voice_control.py      # Discord user muting
+├── lifx_control.py               # LIFX smart lamp control
 │
 ├── discord_config.txt            # Discord bot credentials (YOU CREATE THIS)
 │
@@ -265,6 +295,8 @@ keymaps/default/
 ├── kill_volume.bat               # Stop volume balancer
 ├── start_discord.bat             # Start Discord bot
 ├── kill_discord.bat              # Stop Discord bot
+├── start_lifx.bat                # Start LIFX lamp control
+├── kill_lifx.bat                 # Stop LIFX lamp control
 ├── start_steam.bat               # Launch Steam
 ├── start_nordvpn.bat             # Launch NordVPN
 ├── start_wallpaper.bat           # Launch Wallpaper Engine

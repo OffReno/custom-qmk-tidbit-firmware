@@ -5,3 +5,4 @@ pycaw
 comtypes
 keyboard
 discord.py
+lifxlan

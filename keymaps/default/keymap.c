@@ -24,7 +24,8 @@ enum layers {
 
 enum custom_keycodes {
     OPEN_STEAM = SAFE_RANGE,
-    TOGGLE_MONITOR  // Toggle system monitoring
+    TOGGLE_MONITOR,  // Toggle system monitoring
+    TOGGLE_LIFX      // Toggle LIFX control script
 };
 
 // Encoder state tracking
@@ -42,6 +43,7 @@ static uint32_t monitoring_start_time = 0;  // Time when monitoring was activate
 static bool monitoring_startup = false;  // Whether we're in the 5-second startup phase
 static bool volume_balance_running = false;  // Volume balance script state
 static bool discord_control_running = false;  // Discord voice control state
+static bool lifx_control_running = false;  // LIFX lamp control state
 
 // System monitor data from HID RAW
 static uint8_t cpu_load = 0;
@@ -357,7 +359,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_P7, KC_P8,   KC_P9,   KC_PPLS,
   KC_P4, KC_P5,   KC_P6,   KC_PPLS,
   KC_P1, KC_P2,   KC_P3,   KC_PENT,
-  KC_P0, KC_P0,   KC_PDOT, KC_PENT
+  KC_P0, TOGGLE_LIFX, KC_PDOT, KC_PENT
   ),
 
     [_FUNC] = LAYOUT(
@@ -468,6 +470,29 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;  // Prevent KC_P2 from being sent
 
+        case KC_P0:  // Encoder 3 button - Toggle LIFX lamp on/off
+            if (record->event.pressed) {
+                // Send toggle command to LIFX control script
+                uint8_t data[32] = {0};
+                data[0] = 0xF3;  // LIFX command identifier
+                data[1] = 0x03;  // 0x03 = Toggle lamp on/off command
+                raw_hid_send(data, sizeof(data));
+            }
+            return false;  // Prevent KC_P0 from being sent
+
+        case TOGGLE_LIFX:  // Toggle LIFX control script
+            if (record->event.pressed) {
+                lifx_control_running = !lifx_control_running;
+                if (lifx_control_running) {
+                    // Start LIFX control script
+                    execute_bat_file("start_lifx.bat");
+                } else {
+                    // Stop LIFX control script
+                    execute_bat_file("kill_lifx.bat");
+                }
+            }
+            return false;
+
         case TOGGLE_MONITOR:
             if (record->event.pressed) {
                 monitoring_active = !monitoring_active;
@@ -543,6 +568,15 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
         uint8_t data[32] = {0};
         data[0] = 0xF2;  // Discord command identifier
         data[1] = clockwise ? 0x01 : 0x02;  // 0x01=CW (next user), 0x02=CCW (prev user)
+
+        raw_hid_send(data, sizeof(data));
+        return false;
+    }
+    else if (index == 3) { // Fourth encoder - LIFX lamp brightness
+        // Send HID RAW command for LIFX brightness control
+        uint8_t data[32] = {0};
+        data[0] = 0xF3;  // LIFX command identifier
+        data[1] = clockwise ? 0x01 : 0x02;  // 0x01=CW (brightness up), 0x02=CCW (brightness down)
 
         raw_hid_send(data, sizeof(data));
         return false;

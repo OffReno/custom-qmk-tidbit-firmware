@@ -74,6 +74,7 @@ static bool volume_showing_message = false; // Flag to show volume message
 static char rgb_message[28] = "";           // RGB LED status message
 static uint32_t rgb_message_time = 0;       // Time when RGB message was shown
 static bool rgb_showing_message = false;    // Flag to show RGB message
+static uint8_t current_color_index = 0;     // Track current color (0-8)
 
 // Power control confirmation system
 static uint8_t power_action_pending = 0;    // 0=none, 1=shutdown, 2=hibernate, 3=restart
@@ -110,14 +111,11 @@ static const char* rgb_mode_names[] = {
     "Static",
     "Breathing",
     "Rainbow Mood",
-    "Rainbow Swirl",
-    "Snake",
-    "Knight",
     "Christmas",
     "RGB Test",
     "Alternating"
 };
-#define NUM_RGB_MODES 9
+#define NUM_RGB_MODES 6
 
 // RGB Color names for OLED display (hue-based)
 static const char* rgb_color_names[] = {
@@ -128,9 +126,10 @@ static const char* rgb_color_names[] = {
     "Cyan",
     "Blue",
     "Purple",
-    "Magenta"
+    "Magenta",
+    "White"
 };
-#define NUM_RGB_COLORS 8
+#define NUM_RGB_COLORS 9
 
 // Encoder button detection via matrix
 // The encoder button is wired to the keyboard matrix at the KC_P7 position
@@ -586,14 +585,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case KC_P9:  // '9' key - Cycle RGB LED colors
             if (record->event.pressed) {
-                // Get current hue and increment by ~32 (256/8 colors)
-                uint8_t hue = rgblight_get_hue();
-                hue += 32;  // Increment hue by 1/8 of full range
-                rgblight_sethsv(hue, 255, rgblight_get_val());  // Set new hue, keep sat/val
+                // Increment color index (0-8, then wrap to 0)
+                current_color_index = (current_color_index + 1) % NUM_RGB_COLORS;
 
-                // Determine which color name to show
-                uint8_t color_index = (hue / 32) % NUM_RGB_COLORS;
-                snprintf(rgb_message, sizeof(rgb_message), "Color: %s", rgb_color_names[color_index]);
+                // Get current brightness
+                uint8_t brightness = rgblight_get_val();
+
+                if (current_color_index == 8) {
+                    // White: any hue, saturation = 0
+                    rgblight_sethsv(0, 0, brightness);
+                } else {
+                    // Hue-based colors: hue = index * 32, saturation = 255
+                    uint8_t hue = current_color_index * 32;
+                    rgblight_sethsv(hue, 255, brightness);
+                }
+
+                // Show color name on OLED
+                snprintf(rgb_message, sizeof(rgb_message), "Color: %s", rgb_color_names[current_color_index]);
                 rgb_message_time = timer_read32();
                 rgb_showing_message = true;
             }

@@ -23,9 +23,9 @@
         "animations": {
             "breathing": true,
             "rainbow_mood": true,
-            "rainbow_swirl": true,
-            "snake": true,
-            "knight": true,
+            "rainbow_swirl": false,
+            "snake": false,
+            "knight": false,
             "christmas": true,
             "static_gradient": false,
             "rgb_test": true,

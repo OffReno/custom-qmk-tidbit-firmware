@@ -72,15 +72,15 @@
 - Brightness range: 10% to 100%
 
 ### 💡 RGB LED Control (8 WS2812 LEDs)
-- **'8' Key (KC_P8)**: Cycle through LED animation modes
-- **'9' Key (KC_P9)**: Cycle through LED colors
+- **'8' Key (KC_P8)**: Cycle through LED animation modes (6 total, loops back to Static on 7th press)
+- **'9' Key (KC_P9)**: Cycle through LED colors (9 total, loops back to Red on 10th press)
 - **Fixed Brightness**: 100% (maximum brightness)
 
-**Available LED Modes (9 total):**
-- Static, Breathing, Rainbow Mood, Rainbow Swirl, Snake, Knight, Christmas, RGB Test, Alternating
+**Available LED Modes (6 total - all single-mode animations):**
+- Static, Breathing, Rainbow Mood, Christmas, RGB Test, Alternating
 
-**Available Colors:**
-- Red, Orange, Yellow, Green, Cyan, Blue, Purple, Magenta
+**Available Colors (9 total):**
+- Red, Orange, Yellow, Green, Cyan, Blue, Purple, Magenta, White
 
 **Display Messages:**
 - Mode Change: "LED: [Mode Name]" (3 seconds)

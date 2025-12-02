@@ -1,6 +1,6 @@
 # OffReno Custom TIDBIT Firmware
 
-**A fully customized QMK firmware for the TIDBIT numpad with advanced system monitoring, volume balancing, Discord voice control, smart home lighting, and instant power control.**
+**A fully customized QMK firmware for the TIDBIT numpad with advanced system monitoring, volume balancing, Discord voice control, smart home lighting, RGB LED control, and instant power control.**
 
 ![TIDBIT Keyboard](https://i.imgur.com/placeholder.jpg) <!-- Replace with your actual photo -->
 
@@ -70,6 +70,21 @@
 - Status shown on OLED for 5 seconds
 - Smooth brightness transitions (100ms for adjustments, 500ms for power)
 - Brightness range: 10% to 100%
+
+### 💡 RGB LED Control (8 WS2812 LEDs)
+- **'8' Key (KC_P8)**: Cycle through LED animation modes
+- **'9' Key (KC_P9)**: Cycle through LED colors
+- **Fixed Brightness**: 90% (optimal visibility without eye strain)
+
+**Available LED Modes:**
+- Static, Breathing, Rainbow Mood, Rainbow Swirl, Snake, Knight, Christmas, Static Gradient, RGB Test, Alternating, Twinkle
+
+**Available Colors:**
+- Red, Orange, Yellow, Green, Cyan, Blue, Purple, Magenta
+
+**Display Messages:**
+- Mode Change: "LED: [Mode Name]" (3 seconds)
+- Color Change: "Color: [Color Name]" (3 seconds)
 
 ### 📺 OLED Display (128x32 SSD1306)
 - Custom nullbits logo (idle state)

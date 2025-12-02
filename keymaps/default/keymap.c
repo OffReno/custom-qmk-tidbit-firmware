@@ -70,6 +70,11 @@ static char volume_message[28] = "";        // Volume balancer status message
 static uint32_t volume_message_time = 0;    // Time when volume message was shown
 static bool volume_showing_message = false; // Flag to show volume message
 
+// RGB LED control data
+static char rgb_message[28] = "";           // RGB LED status message
+static uint32_t rgb_message_time = 0;       // Time when RGB message was shown
+static bool rgb_showing_message = false;    // Flag to show RGB message
+
 // Power control confirmation system
 static uint8_t power_action_pending = 0;    // 0=none, 1=shutdown, 2=hibernate, 3=restart
 static uint32_t power_action_time = 0;      // Time when power action was first pressed
@@ -99,6 +104,35 @@ static const char* kill_bat_files[] = {
 
 // Track last opened app for OLED display
 static const char* last_app = "Idle";
+
+// RGB LED mode names for OLED display
+static const char* rgb_mode_names[] = {
+    "Static",
+    "Breathing",
+    "Rainbow Mood",
+    "Rainbow Swirl",
+    "Snake",
+    "Knight",
+    "Christmas",
+    "Static Gradient",
+    "RGB Test",
+    "Alternating",
+    "Twinkle"
+};
+#define NUM_RGB_MODES 11
+
+// RGB Color names for OLED display (hue-based)
+static const char* rgb_color_names[] = {
+    "Red",
+    "Orange",
+    "Yellow",
+    "Green",
+    "Cyan",
+    "Blue",
+    "Purple",
+    "Magenta"
+};
+#define NUM_RGB_COLORS 8
 
 // Encoder button detection via matrix
 // The encoder button is wired to the keyboard matrix at the KC_P7 position
@@ -537,6 +571,36 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;  // Prevent KC_P5 from being sent
 
+        case KC_P8:  // '8' key - Cycle RGB LED modes
+            if (record->event.pressed) {
+                rgblight_step();  // Cycle to next mode
+                uint8_t mode = rgblight_get_mode();
+                // Mode numbers start at 1, array starts at 0
+                if (mode >= 1 && mode <= NUM_RGB_MODES) {
+                    snprintf(rgb_message, sizeof(rgb_message), "LED: %s", rgb_mode_names[mode - 1]);
+                } else {
+                    strcpy(rgb_message, "LED Mode Changed");
+                }
+                rgb_message_time = timer_read32();
+                rgb_showing_message = true;
+            }
+            return false;  // Prevent '8' from being sent
+
+        case KC_P9:  // '9' key - Cycle RGB LED colors
+            if (record->event.pressed) {
+                // Get current hue and increment by ~32 (256/8 colors)
+                uint8_t hue = rgblight_get_hue();
+                hue += 32;  // Increment hue by 1/8 of full range
+                rgblight_sethsv(hue, 255, rgblight_get_val());  // Set new hue, keep sat/val
+
+                // Determine which color name to show
+                uint8_t color_index = (hue / 32) % NUM_RGB_COLORS;
+                snprintf(rgb_message, sizeof(rgb_message), "Color: %s", rgb_color_names[color_index]);
+                rgb_message_time = timer_read32();
+                rgb_showing_message = true;
+            }
+            return false;  // Prevent '9' from being sent
+
         case KC_P1:  // Encoder 2 button - Mute/unmute only
             if (record->event.pressed && discord_control_running) {
                 // Send mute/unmute command for selected user
@@ -685,7 +749,9 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 
 // Initialize keyboard
 void keyboard_post_init_user(void) {
-    // No special initialization needed - encoder button uses matrix
+    // Set RGB LED brightness to 90% (230 out of 255)
+    rgblight_sethsv(0, 255, 230);  // Red color at 90% brightness
+    rgblight_enable();  // Ensure RGB is enabled
 }
 
 // Matrix scan for 2-second timeout and monitoring startup
@@ -765,6 +831,7 @@ bool oled_task_user(void) {
     static bool last_discord_active = false;
     static bool last_lifx_active = false;
     static bool last_volume_active = false;
+    static bool last_rgb_active = false;
     static bool last_power_active = false;
 
     // Clear display on first run only
@@ -778,7 +845,7 @@ bool oled_task_user(void) {
     bool current_discord_display = discord_control_running || discord_showing_message;
     if (monitoring_active != last_monitoring_active || current_discord_display != last_discord_active ||
         lifx_showing_message != last_lifx_active || volume_showing_message != last_volume_active ||
-        power_showing_message != last_power_active) {
+        rgb_showing_message != last_rgb_active || power_showing_message != last_power_active) {
         should_clear = true;  // Mode changed
     } else if (monitoring_active && (monitoring_startup != last_monitoring_startup)) {
         should_clear = true;  // Within monitoring, startup phase changed
@@ -794,6 +861,7 @@ bool oled_task_user(void) {
     last_discord_active = current_discord_display;
     last_lifx_active = lifx_showing_message;
     last_volume_active = volume_showing_message;
+    last_rgb_active = rgb_showing_message;
     last_power_active = power_showing_message;
 
     // Priority 1: Power confirmation messages (highest priority)
@@ -977,6 +1045,34 @@ bool oled_task_user(void) {
             volume_message[0] = '\0';
             volume_message_time = 0;
             volume_showing_message = false;
+            oled_clear();
+            // Show logo
+            render_large_text(last_app);
+        }
+    } else if (rgb_showing_message) {
+        // RGB LED status message mode - show message for 3 seconds then return to logo
+        char buf[22];
+
+        // Check if we should still show the message (within 3 seconds)
+        if (rgb_message_time != 0 && timer_elapsed32(rgb_message_time) < 3000) {
+            // Show RGB status message
+            oled_set_cursor(0, 0);
+            oled_write_P(PSTR("                     "), false);
+
+            oled_set_cursor(0, 1);
+            snprintf(buf, sizeof(buf), "%-21s", rgb_message);
+            oled_write(buf, false);
+
+            oled_set_cursor(0, 2);
+            oled_write_P(PSTR("                     "), false);
+
+            oled_set_cursor(0, 3);
+            oled_write_P(PSTR("                     "), false);
+        } else {
+            // Clear message after 3 seconds and return to logo
+            rgb_message[0] = '\0';
+            rgb_message_time = 0;
+            rgb_showing_message = false;
             oled_clear();
             // Show logo
             render_large_text(last_app);

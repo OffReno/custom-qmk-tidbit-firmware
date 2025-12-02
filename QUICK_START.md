@@ -4,6 +4,7 @@
 
 ### What You Have
 - **4 Encoders** with custom functions
+- **3 Power Control Keys** (shutdown, hibernate, restart)
 - **OLED Display** showing stats and logos
 - **4 Python Scripts** running in background
 - **Discord Bot** for voice channel control
@@ -13,6 +14,11 @@
 
 | Control | Function |
 |---------|----------|
+| **Power Keys (Top Row)** | |
+| '/' key | Shutdown PC (5s confirm) |
+| '*' key | Hibernate PC (5s confirm) |
+| '-' key | Restart PC (5s confirm) |
+| **Confirmation** | Press again to cancel within 5s |
 | **Encoder 0** | |
 | Rotate CW/CCW | Cycle apps (launch/kill modes) |
 | Press | Toggle system monitor |

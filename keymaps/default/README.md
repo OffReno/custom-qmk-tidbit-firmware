@@ -1,10 +1,22 @@
 # OffReno Custom TIDBIT Firmware
 
-**A fully customized QMK firmware for the TIDBIT numpad with advanced system monitoring, volume balancing, Discord voice control, and smart home lighting.**
+**A fully customized QMK firmware for the TIDBIT numpad with advanced system monitoring, volume balancing, Discord voice control, smart home lighting, and instant power control.**
 
 ![TIDBIT Keyboard](https://i.imgur.com/placeholder.jpg) <!-- Replace with your actual photo -->
 
 ## 🎮 Features
+
+### ⚡ Power Control Keys (Top Row)
+- **'/' Key (KC_PSLS)**: Shutdown PC
+- **'*' Key (KC_PAST)**: Hibernate PC (saves state, can wake with keyboard)
+- **'-' Key (KC_PMNS)**: Restart PC
+
+**5-Second Confirmation System:**
+1. First press → OLED shows "Press Again to Cancel"
+2. Second press within 5 seconds → Cancels action, shows "[Action] Cancelled" for 3 seconds
+3. No second press after 5 seconds → Executes power action
+
+**Note:** You cannot boot a completely powered-off PC with a keyboard. Hibernate mode allows waking with keyboard press (if BIOS USB wake is enabled).
 
 ### 🔄 Four Powerful Encoders
 

@@ -65,6 +65,12 @@ static char lifx_message[28] = "";          // LIFX status message
 static uint32_t lifx_message_time = 0;      // Time when LIFX message was shown
 static bool lifx_showing_message = false;   // Flag to show LIFX message
 
+// Power control confirmation system
+static uint8_t power_action_pending = 0;    // 0=none, 1=shutdown, 2=hibernate, 3=restart
+static uint32_t power_action_time = 0;      // Time when power action was first pressed
+static char power_message[28] = "";         // Power action message for OLED
+static bool power_showing_message = false;  // Flag to show power confirmation message
+
 // App names for starting (clockwise)
 static const char* start_apps[] = {"Steam", "Discord", "Desktop WP", "NordVPN"};
 static const char* start_bat_files[] = {
@@ -406,6 +412,66 @@ void execute_bat_file(const char* bat_file) {
 // Handle custom keycodes
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
+        case KC_PSLS:  // '/' key - Shutdown PC
+            if (record->event.pressed) {
+                if (power_action_pending == 1) {
+                    // Second press - cancel shutdown
+                    power_action_pending = 0;
+                    power_action_time = 0;
+                    power_showing_message = false;
+                    strcpy(power_message, "Shutdown Cancelled");
+                    power_action_time = timer_read32();
+                    power_showing_message = true;
+                } else {
+                    // First press - show confirmation
+                    power_action_pending = 1;  // Shutdown
+                    power_action_time = timer_read32();
+                    strcpy(power_message, "Press Again to Cancel");
+                    power_showing_message = true;
+                }
+            }
+            return false;  // Prevent '/' from being sent
+
+        case KC_PAST:  // '*' key - Hibernate PC
+            if (record->event.pressed) {
+                if (power_action_pending == 2) {
+                    // Second press - cancel hibernate
+                    power_action_pending = 0;
+                    power_action_time = 0;
+                    power_showing_message = false;
+                    strcpy(power_message, "Hibernate Cancelled");
+                    power_action_time = timer_read32();
+                    power_showing_message = true;
+                } else {
+                    // First press - show confirmation
+                    power_action_pending = 2;  // Hibernate
+                    power_action_time = timer_read32();
+                    strcpy(power_message, "Press Again to Cancel");
+                    power_showing_message = true;
+                }
+            }
+            return false;  // Prevent '*' from being sent
+
+        case KC_PMNS:  // '-' key - Restart PC
+            if (record->event.pressed) {
+                if (power_action_pending == 3) {
+                    // Second press - cancel restart
+                    power_action_pending = 0;
+                    power_action_time = 0;
+                    power_showing_message = false;
+                    strcpy(power_message, "Restart Cancelled");
+                    power_action_time = timer_read32();
+                    power_showing_message = true;
+                } else {
+                    // First press - show confirmation
+                    power_action_pending = 3;  // Restart
+                    power_action_time = timer_read32();
+                    strcpy(power_message, "Press Again to Cancel");
+                    power_showing_message = true;
+                }
+            }
+            return false;  // Prevent '-' from being sent
+
         case KC_P7:  // Encoder 0 button - toggle monitoring
             if (record->event.pressed) {
                 // Toggle monitoring mode when encoder button is pressed
@@ -631,6 +697,45 @@ void matrix_scan_user(void) {
             monitoring_startup = false;
         }
     }
+
+    // Handle power action timeout (5 seconds)
+    if (power_action_pending != 0) {
+        if (timer_elapsed32(power_action_time) >= 5000) {
+            // 5 seconds elapsed - execute action
+            if (power_action_pending == 1) {
+                // Shutdown
+                tap_code16(LGUI(KC_R));
+                wait_ms(150);
+                tap_code16(LCTL(KC_A));
+                wait_ms(50);
+                send_string("shutdown /s /t 0");
+                wait_ms(50);
+                tap_code(KC_ENT);
+            } else if (power_action_pending == 2) {
+                // Hibernate
+                tap_code16(LGUI(KC_R));
+                wait_ms(150);
+                tap_code16(LCTL(KC_A));
+                wait_ms(50);
+                send_string("shutdown /h");
+                wait_ms(50);
+                tap_code(KC_ENT);
+            } else if (power_action_pending == 3) {
+                // Restart
+                tap_code16(LGUI(KC_R));
+                wait_ms(150);
+                tap_code16(LCTL(KC_A));
+                wait_ms(50);
+                send_string("shutdown /r /t 0");
+                wait_ms(50);
+                tap_code(KC_ENT);
+            }
+            // Clear pending action
+            power_action_pending = 0;
+            power_action_time = 0;
+            power_showing_message = false;
+        }
+    }
 }
 
 #ifdef OLED_ENABLE
@@ -641,6 +746,7 @@ bool oled_task_user(void) {
     static bool last_monitoring_startup = false;
     static bool last_discord_active = false;
     static bool last_lifx_active = false;
+    static bool last_power_active = false;
 
     // Clear display on first run only
     if (!oled_initialized) {
@@ -651,7 +757,8 @@ bool oled_task_user(void) {
     // Check if we need to clear the display (only on state changes)
     bool should_clear = false;
     bool current_discord_display = discord_control_running || discord_showing_message;
-    if (monitoring_active != last_monitoring_active || current_discord_display != last_discord_active || lifx_showing_message != last_lifx_active) {
+    if (monitoring_active != last_monitoring_active || current_discord_display != last_discord_active ||
+        lifx_showing_message != last_lifx_active || power_showing_message != last_power_active) {
         should_clear = true;  // Mode changed
     } else if (monitoring_active && (monitoring_startup != last_monitoring_startup)) {
         should_clear = true;  // Within monitoring, startup phase changed
@@ -666,9 +773,38 @@ bool oled_task_user(void) {
     last_monitoring_startup = monitoring_startup;
     last_discord_active = current_discord_display;
     last_lifx_active = lifx_showing_message;
+    last_power_active = power_showing_message;
 
-    // If in monitoring mode
-    if (monitoring_active) {
+    // Priority 1: Power confirmation messages (highest priority)
+    if (power_showing_message) {
+        char buf[22];
+
+        // Check if cancellation message should clear after 3 seconds
+        if (power_action_pending == 0 && power_action_time != 0 && timer_elapsed32(power_action_time) >= 3000) {
+            // Clear cancellation message after 3 seconds
+            power_message[0] = '\0';
+            power_action_time = 0;
+            power_showing_message = false;
+            oled_clear();
+            render_large_text(last_app);
+        } else {
+            // Show power confirmation message
+            oled_set_cursor(0, 0);
+            oled_write_P(PSTR("                     "), false);
+
+            oled_set_cursor(0, 1);
+            snprintf(buf, sizeof(buf), "%-21s", power_message);
+            oled_write(buf, false);
+
+            oled_set_cursor(0, 2);
+            oled_write_P(PSTR("                     "), false);
+
+            oled_set_cursor(0, 3);
+            oled_write_P(PSTR("                     "), false);
+        }
+    }
+    // Priority 2: If in monitoring mode
+    else if (monitoring_active) {
         if (monitoring_startup) {
             // Show "Monitoring" with dots based on elapsed time
             uint32_t elapsed = timer_elapsed32(monitoring_start_time);

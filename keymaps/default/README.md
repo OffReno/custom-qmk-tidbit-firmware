@@ -12,7 +12,11 @@
 - **'-' Key (KC_PMNS)**: Restart PC
 
 **5-Second Confirmation System:**
-1. First press → OLED shows "Press Again to Cancel"
+1. First press → OLED shows two lines:
+   ```
+   Press again to cancel :
+   [Shutdown/Hibernate/Restart]
+   ```
 2. Second press within 5 seconds → Cancels action, shows "[Action] Cancelled" for 3 seconds
 3. No second press after 5 seconds → Executes power action
 
@@ -37,6 +41,10 @@
 - **CCW Rotation**: Increase Discord volume, decrease game volume
 - **Button Press (KC_P4)**: Reset volumes to 50/50 balance
 - **KC_P5 Toggle**: Start/stop volume balance script
+
+**Display Messages:**
+- Script Start: "Volume Balancer ON" (3 seconds)
+- Script Stop: "Volume Balancer OFF" (3 seconds)
 
 #### **Encoder 2 (Third Row)** - Discord Voice Control 🎙️
 - **CW Rotation**: Next user in voice channel

@@ -65,10 +65,16 @@ static char lifx_message[28] = "";          // LIFX status message
 static uint32_t lifx_message_time = 0;      // Time when LIFX message was shown
 static bool lifx_showing_message = false;   // Flag to show LIFX message
 
+// Volume balancer control data
+static char volume_message[28] = "";        // Volume balancer status message
+static uint32_t volume_message_time = 0;    // Time when volume message was shown
+static bool volume_showing_message = false; // Flag to show volume message
+
 // Power control confirmation system
 static uint8_t power_action_pending = 0;    // 0=none, 1=shutdown, 2=hibernate, 3=restart
 static uint32_t power_action_time = 0;      // Time when power action was first pressed
-static char power_message[28] = "";         // Power action message for OLED
+static char power_message[28] = "";         // Power action message line 1 for OLED
+static char power_message2[28] = "";        // Power action message line 2 for OLED
 static bool power_showing_message = false;  // Flag to show power confirmation message
 
 // App names for starting (clockwise)
@@ -420,13 +426,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     power_action_time = 0;
                     power_showing_message = false;
                     strcpy(power_message, "Shutdown Cancelled");
+                    power_message2[0] = '\0';  // Clear second line
                     power_action_time = timer_read32();
                     power_showing_message = true;
                 } else {
                     // First press - show confirmation
                     power_action_pending = 1;  // Shutdown
                     power_action_time = timer_read32();
-                    strcpy(power_message, "Press Again to Cancel");
+                    strcpy(power_message, "Press again to cancel :");
+                    strcpy(power_message2, "Shutdown");
                     power_showing_message = true;
                 }
             }
@@ -440,13 +448,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     power_action_time = 0;
                     power_showing_message = false;
                     strcpy(power_message, "Hibernate Cancelled");
+                    power_message2[0] = '\0';  // Clear second line
                     power_action_time = timer_read32();
                     power_showing_message = true;
                 } else {
                     // First press - show confirmation
                     power_action_pending = 2;  // Hibernate
                     power_action_time = timer_read32();
-                    strcpy(power_message, "Press Again to Cancel");
+                    strcpy(power_message, "Press again to cancel :");
+                    strcpy(power_message2, "Hibernate");
                     power_showing_message = true;
                 }
             }
@@ -460,13 +470,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     power_action_time = 0;
                     power_showing_message = false;
                     strcpy(power_message, "Restart Cancelled");
+                    power_message2[0] = '\0';  // Clear second line
                     power_action_time = timer_read32();
                     power_showing_message = true;
                 } else {
                     // First press - show confirmation
                     power_action_pending = 3;  // Restart
                     power_action_time = timer_read32();
-                    strcpy(power_message, "Press Again to Cancel");
+                    strcpy(power_message, "Press again to cancel :");
+                    strcpy(power_message2, "Restart");
                     power_showing_message = true;
                 }
             }
@@ -513,8 +525,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 volume_balance_running = !volume_balance_running;
                 if (volume_balance_running) {
                     execute_bat_file("start_volume.bat");
+                    strcpy(volume_message, "Volume Balancer ON");
+                    volume_message_time = timer_read32();
+                    volume_showing_message = true;
                 } else {
                     execute_bat_file("kill_volume.bat");
+                    strcpy(volume_message, "Volume Balancer OFF");
+                    volume_message_time = timer_read32();
+                    volume_showing_message = true;
                 }
             }
             return false;  // Prevent KC_P5 from being sent
@@ -746,6 +764,7 @@ bool oled_task_user(void) {
     static bool last_monitoring_startup = false;
     static bool last_discord_active = false;
     static bool last_lifx_active = false;
+    static bool last_volume_active = false;
     static bool last_power_active = false;
 
     // Clear display on first run only
@@ -758,7 +777,8 @@ bool oled_task_user(void) {
     bool should_clear = false;
     bool current_discord_display = discord_control_running || discord_showing_message;
     if (monitoring_active != last_monitoring_active || current_discord_display != last_discord_active ||
-        lifx_showing_message != last_lifx_active || power_showing_message != last_power_active) {
+        lifx_showing_message != last_lifx_active || volume_showing_message != last_volume_active ||
+        power_showing_message != last_power_active) {
         should_clear = true;  // Mode changed
     } else if (monitoring_active && (monitoring_startup != last_monitoring_startup)) {
         should_clear = true;  // Within monitoring, startup phase changed
@@ -773,6 +793,7 @@ bool oled_task_user(void) {
     last_monitoring_startup = monitoring_startup;
     last_discord_active = current_discord_display;
     last_lifx_active = lifx_showing_message;
+    last_volume_active = volume_showing_message;
     last_power_active = power_showing_message;
 
     // Priority 1: Power confirmation messages (highest priority)
@@ -783,12 +804,13 @@ bool oled_task_user(void) {
         if (power_action_pending == 0 && power_action_time != 0 && timer_elapsed32(power_action_time) >= 3000) {
             // Clear cancellation message after 3 seconds
             power_message[0] = '\0';
+            power_message2[0] = '\0';
             power_action_time = 0;
             power_showing_message = false;
             oled_clear();
             render_large_text(last_app);
         } else {
-            // Show power confirmation message
+            // Show power confirmation message (two lines)
             oled_set_cursor(0, 0);
             oled_write_P(PSTR("                     "), false);
 
@@ -797,7 +819,8 @@ bool oled_task_user(void) {
             oled_write(buf, false);
 
             oled_set_cursor(0, 2);
-            oled_write_P(PSTR("                     "), false);
+            snprintf(buf, sizeof(buf), "%-21s", power_message2);
+            oled_write(buf, false);
 
             oled_set_cursor(0, 3);
             oled_write_P(PSTR("                     "), false);
@@ -926,6 +949,34 @@ bool oled_task_user(void) {
             lifx_message[0] = '\0';
             lifx_message_time = 0;
             lifx_showing_message = false;
+            oled_clear();
+            // Show logo
+            render_large_text(last_app);
+        }
+    } else if (volume_showing_message) {
+        // Volume balancer status message mode - show message for 3 seconds then return to logo
+        char buf[22];
+
+        // Check if we should still show the message (within 3 seconds)
+        if (volume_message_time != 0 && timer_elapsed32(volume_message_time) < 3000) {
+            // Show volume balancer status message
+            oled_set_cursor(0, 0);
+            oled_write_P(PSTR("                     "), false);
+
+            oled_set_cursor(0, 1);
+            snprintf(buf, sizeof(buf), "%-21s", volume_message);
+            oled_write(buf, false);
+
+            oled_set_cursor(0, 2);
+            oled_write_P(PSTR("                     "), false);
+
+            oled_set_cursor(0, 3);
+            oled_write_P(PSTR("                     "), false);
+        } else {
+            // Clear message after 3 seconds and return to logo
+            volume_message[0] = '\0';
+            volume_message_time = 0;
+            volume_showing_message = false;
             oled_clear();
             // Show logo
             render_large_text(last_app);

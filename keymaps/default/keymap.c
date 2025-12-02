@@ -114,12 +114,10 @@ static const char* rgb_mode_names[] = {
     "Snake",
     "Knight",
     "Christmas",
-    "Static Gradient",
     "RGB Test",
-    "Alternating",
-    "Twinkle"
+    "Alternating"
 };
-#define NUM_RGB_MODES 11
+#define NUM_RGB_MODES 9
 
 // RGB Color names for OLED display (hue-based)
 static const char* rgb_color_names[] = {
@@ -749,8 +747,8 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 
 // Initialize keyboard
 void keyboard_post_init_user(void) {
-    // Set RGB LED brightness to 90% (230 out of 255)
-    rgblight_sethsv(0, 255, 230);  // Red color at 90% brightness
+    // Set RGB LED brightness to 100% (255 out of 255)
+    rgblight_sethsv(0, 255, 255);  // Red color at 100% brightness
     rgblight_enable();  // Ensure RGB is enabled
 }
 

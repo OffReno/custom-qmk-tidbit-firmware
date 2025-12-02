@@ -74,10 +74,10 @@
 ### 💡 RGB LED Control (8 WS2812 LEDs)
 - **'8' Key (KC_P8)**: Cycle through LED animation modes
 - **'9' Key (KC_P9)**: Cycle through LED colors
-- **Fixed Brightness**: 90% (optimal visibility without eye strain)
+- **Fixed Brightness**: 100% (maximum brightness)
 
-**Available LED Modes:**
-- Static, Breathing, Rainbow Mood, Rainbow Swirl, Snake, Knight, Christmas, Static Gradient, RGB Test, Alternating, Twinkle
+**Available LED Modes (9 total):**
+- Static, Breathing, Rainbow Mood, Rainbow Swirl, Snake, Knight, Christmas, RGB Test, Alternating
 
 **Available Colors:**
 - Red, Orange, Yellow, Green, Cyan, Blue, Purple, Magenta

@@ -27,10 +27,10 @@
             "snake": true,
             "knight": true,
             "christmas": true,
-            "static_gradient": true,
+            "static_gradient": false,
             "rgb_test": true,
             "alternating": true,
-            "twinkle": true
+            "twinkle": false
         }
     },
     "ws2812": {
